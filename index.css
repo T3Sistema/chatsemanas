@@ -15,31 +15,47 @@
         radial-gradient(circle at 10px 10px, rgba(255,255,255,0.08) 1px, transparent 0);
 }
 
+/* === NEW LAYOUT FIX FOR MOBILE & DESKTOP === */
+html, body {
+    height: 100%;
+    overflow: hidden; /* Prevents scrolling on the body, important for fixed layout */
+}
+
+#root {
+    position: fixed; /* Crucial fix for mobile browser viewport resizing */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex; /* Use flexbox for robust centering on desktop */
+    align-items: center;
+    justify-content: center;
+}
+
 /* ====== DESKTOP CONTAINER STYLING ====== */
 @media (min-width: 768px) {
+    /* #root > div targets the main container from the React component. */
     #root > div {
-        /* Overrides Tailwind for a floating window effect */
+        /* Override Tailwind's h-full and w-full for a windowed appearance. */
+        height: min(90vh, 900px) !important;
+        width: 100% !important;
         max-width: 800px !important;
-        height: calc(100vh - 4rem) !important;
-        max-height: 900px !important;
-        margin: 2rem auto !important;
         
-        border-radius: 1.5rem; /* Softer radius */
+        /* Centering is now handled by flexbox on #root, so no margin needed. */
+        
+        border-radius: 1.5rem;
         border: 1px solid rgba(255, 255, 255, 0.1);
         
-        background-color: rgba(255, 255, 255, 0.6); /* Glassmorphism */
+        background-color: rgba(255, 255, 255, 0.6);
         -webkit-backdrop-filter: blur(20px);
         backdrop-filter: blur(20px);
         
         box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.2);
         overflow: hidden;
-        
-        display: flex;
-        flex-direction: column;
     }
 
     .dark #root > div {
-        background-color: rgba(24, 33, 51, 0.6); /* Dark Glassmorphism */
+        background-color: rgba(24, 33, 51, 0.6);
         border-color: rgba(255, 255, 255, 0.1);
     }
 }
