@@ -46,7 +46,9 @@ const ChatApp = () => {
 
     useEffect(() => {
         try {
-            const genAI = new GoogleGenAI({ apiKey: process.env.API_KEY });
+            // ATENÇÃO: Chave de API exposta! Apenas para testes locais e privados.
+            // NUNCA suba este código para um ambiente público com a chave aqui.
+            const genAI = new GoogleGenAI({ apiKey: "AIzaSyALhfUW6htJTBLE7HJw1jmWPQNhJZ_Y_WA" });
             setAi(genAI);
             const chatSession = genAI.chats.create({
                 model: 'gemini-2.5-flash',
@@ -55,7 +57,7 @@ const ChatApp = () => {
             setChat(chatSession);
         } catch (error) {
             console.error("Erro ao inicializar a IA:", error);
-            addMessage("Desculpe, estou com um problema para me conectar. Tente novamente mais tarde.", 'bot');
+            addMessage("Desculpe, estou com um problema para me conectar. Verifique se a chave de API é válida.", 'bot');
         }
     }, []);
 
@@ -218,25 +220,27 @@ const ChatApp = () => {
             
             const jsonText = response.text.trim();
             const parsedResponse = JSON.parse(jsonText);
-            addMessage(parsedResponse.response_text, 'bot');
 
-            if (conversationStep === 'awaiting_name' && parsedResponse.user_name) {
-                setUserInfo(prev => ({ ...prev, name: parsedResponse.user_name }));
-                setConversationStep('awaiting_phone');
-            } else if (conversationStep === 'awaiting_phone' && parsedResponse.user_phone) {
+            // Handle successful phone collection AND EXIT. No intermediate message.
+            if (conversationStep === 'awaiting_phone' && parsedResponse.user_phone) {
                 const updatedUserInfo = { ...userInfo, phone: parsedResponse.user_phone };
                 setUserInfo(updatedUserInfo);
-                
-                setIsTyping(false);
+                setIsTyping(false); // Stop typing indicator, webhook processing starts next
 
                 if (updatedUserInfo.selectedOption === 'DOWNLOAD CCT 2025') {
                     await registerAndPrepareDownload(updatedUserInfo.name, updatedUserInfo.phone);
                 } else if (updatedUserInfo.selectedOption === 'TIRAR DÚVIDAS CCT 2025') {
                     await registerDoubtsLead(updatedUserInfo.name, updatedUserInfo.phone);
-                } else {
-                    setConversationStep('general_chat');
                 }
-                return;
+                return; // Exit function to prevent adding more messages
+            }
+            
+            // For all other cases (name collection, or questions), add the AI's response message.
+            addMessage(parsedResponse.response_text, 'bot');
+
+            if (conversationStep === 'awaiting_name' && parsedResponse.user_name) {
+                setUserInfo(prev => ({ ...prev, name: parsedResponse.user_name }));
+                setConversationStep('awaiting_phone');
             }
         } catch(error) {
             console.error("Erro na análise da IA:", error);
@@ -269,9 +273,10 @@ const ChatApp = () => {
                 addMessage('Entendido. Para que um de nossos especialistas possa te ajudar, por favor, me informe seu nome completo.', 'bot');
             }, 1000);
         } else { // CENTRAL DO ASSOCIADO
-            setConversationStep('associado_menu');
             setTimeout(() => {
                 addMessage(`Entendido. Você está na Central do Associado. O que você gostaria de ver?`, 'bot');
+                // Adicionado um pequeno atraso para garantir que a mensagem renderize antes dos botões
+                setTimeout(() => setConversationStep('associado_menu'), 50);
             }, 1000);
         }
     };
@@ -289,12 +294,13 @@ const ChatApp = () => {
                 );
             }, 1000);
         } else { // SERVIÇOS DIPONÍVEIS
-            setConversationStep('servicos_menu');
             setTimeout(() => {
                 addMessage(
                     'Perfeito! Estes são os nossos serviços disponíveis. Selecione uma opção para saber mais detalhes:',
                     'bot'
                 );
+                 // Adicionado um pequeno atraso para garantir que a mensagem renderize antes dos botões
+                setTimeout(() => setConversationStep('servicos_menu'), 50);
             }, 1000);
         }
     };
@@ -423,7 +429,7 @@ const ChatApp = () => {
                         ))}
                     </div>
                 )}
-                {(isTyping || isProcessingWebhook) && !isProcessingWebhook &&(
+                {isTyping && (
                     <div className="flex items-end gap-3 justify-start message-animation mt-6">
                         <img src={logoUrl} alt="Bot avatar" className="w-9 h-9 rounded-full self-start object-cover"/>
                         <div className="px-4 py-4 rounded-2xl shadow-md bg-white dark:bg-gray-700 rounded-bl-none">
